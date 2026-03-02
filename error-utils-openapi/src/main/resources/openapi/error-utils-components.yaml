@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: error-utils shared error contract
+  version: 1.0.0
+  description: Reusable API error schemas and responses for Spring Boot services.
+
+components:
+  schemas:
+    FieldViolation:
+      type: object
+      properties:
+        field:
+          type: string
+          example: email
+        rejectedValue:
+          nullable: true
+          description: Value rejected by validation or business rule.
+        message:
+          type: string
+          example: must be a well-formed email address
+        code:
+          type: string
+          example: Email
+
+    ApiError:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - code
+        - path
+        - violations
+        - metadata
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: 2026-02-24T10:16:02Z
+        status:
+          type: integer
+          format: int32
+          example: 400
+        error:
+          type: string
+          example: BAD_REQUEST
+        code:
+          type: string
+          example: REQUEST_VALIDATION_FAILED
+        message:
+          type: string
+          nullable: true
+          example: Validation failed
+        path:
+          type: string
+          example: /api/customers
+        correlationId:
+          type: string
+          nullable: true
+          example: c4f1b0d8f9d24e3f
+        traceId:
+          type: string
+          nullable: true
+          example: 8aa1f3c45d9a2b10
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldViolation'
+        metadata:
+          type: object
+          additionalProperties: true
+
+  responses:
+    Error400:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          examples:
+            validation:
+              value:
+                timestamp: 2026-02-24T10:16:02Z
+                status: 400
+                error: BAD_REQUEST
+                code: REQUEST_VALIDATION_FAILED
+                message: Validation failed
+                path: /api/customers
+                correlationId: c4f1b0d8f9d24e3f
+                traceId: 8aa1f3c45d9a2b10
+                violations:
+                  - field: email
+                    rejectedValue: abc
+                    message: must be a well-formed email address
+                    code: Email
+                metadata: {}
+
+    Error401:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Error403:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Error404:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Error409:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Error422:
+      description: Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+    Error500:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
