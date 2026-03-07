@@ -1,0 +1,97 @@
+@startuml
+title error-utils: exception workflow after refactor
+
+autonumber
+hide footbox
+
+actor Client
+participant "Controller / Service" as App
+participant "GlobalApiExceptionHandler" as Handler
+participant "ApiErrorFactory\n(Spring facade)" as PublicFactory
+participant "WebApiErrorFactory\n(web adapter)" as WebFactory
+participant "TraceContextResolver" as TraceResolver
+participant "ErrorMetadataSanitizer" as Sanitizer
+participant "ApiErrorRenderer\n(core)" as Renderer
+participant "ApiErrorAssembler\n(core)" as Assembler
+participant "ErrorResponseCustomizer*" as Customizers
+
+note over PublicFactory, Assembler
+Current split:
+- spring-webmvc: request adaptation + trace/config + customizers
+- core: payload rendering + final assembly
+end note
+
+Client -> App: HTTP request
+App -> App: execute business logic
+
+alt Business exception
+    App --> Handler: throw BusinessException\n(or NotFoundException /\nConflictException /\nPolicyViolationException)
+    Handler -> PublicFactory: fromBusinessException(ex, request)
+    PublicFactory -> WebFactory: inherited implementation
+    WebFactory -> WebFactory: ex.errorCode()\nex.getMessage()\nex.violations()\nex.metadata()
+else Internal exception
+    App --> Handler: throw InternalException
+    Handler -> Handler: log.error(...)
+    Handler -> PublicFactory: fromInternalException(ex, request)
+    PublicFactory -> WebFactory: inherited implementation
+    WebFactory -> WebFactory: ex.errorCode()\nsafeTechnicalMessage(...)\nviolations=[]\nmetadata={}
+else Unhandled exception
+    App --> Handler: throw Throwable
+    Handler -> Handler: log.error(...)
+    Handler -> PublicFactory: fromUnhandled(ex, request)
+    PublicFactory -> WebFactory: inherited implementation
+    WebFactory -> WebFactory: StandardErrorCode.TECHNICAL_ERROR\nsafeTechnicalMessage(...)\nviolations=[]\nmetadata={}
+end
+
+group Web adapter responsibilities
+    WebFactory -> WebFactory: normalize violations
+
+    WebFactory -> TraceResolver: resolve(request)
+    note right of TraceResolver
+    Lookup order:
+    1. request attribute
+    2. header
+    3. MDC
+    end note
+    TraceResolver --> WebFactory: TraceContext(correlationId, traceId)
+
+    WebFactory -> Sanitizer: sanitize(metadata)
+    Sanitizer --> WebFactory: sanitized metadata
+end
+
+group Core rendering responsibilities
+    WebFactory -> Renderer: render(errorCode, message, path,\noptional correlationId,\noptional traceId,\nviolations, metadata)
+    note right of WebFactory
+    path = request.getRequestURI()
+    ids included only when enabled in ErrorUtilsProperties
+    end note
+
+    Renderer -> Renderer: Instant.now(clock)\nnormalize collections/maps
+    Renderer -> Assembler: assemble(ApiErrorInput)
+    Assembler -> Assembler: resolve HTTP status name
+    Assembler --> Renderer: ApiError
+    Renderer --> WebFactory: ApiError
+end
+
+group Web post-processing
+    WebFactory -> WebFactory: build ErrorResponseContext
+    loop for each customizer
+        WebFactory -> Customizers: customize(currentApiError, context)
+        alt customizer returned replacement
+            Customizers --> WebFactory: ApiError
+        else customizer returned null
+            Customizers --> WebFactory: keep current payload
+        end
+    end
+end
+
+WebFactory --> PublicFactory: final ApiError
+PublicFactory --> Handler: final ApiError
+Handler --> Client: ResponseEntity<ApiError>\nstatus = body.status()
+
+note over Client
+Validation-specific flow is omitted here.
+This diagram covers exception rendering only.
+end note
+
+@enduml
