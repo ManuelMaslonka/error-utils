@@ -32,4 +32,4 @@ jobs:
       - name: Build and deploy
         run: ./mvnw -B -ntp deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
