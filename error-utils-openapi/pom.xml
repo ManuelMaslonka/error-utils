@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.maslonka.reservation</groupId>
+        <groupId>io.github.manuelmaslonka</groupId>
         <artifactId>error-utils-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>error-utils-openapi</artifactId>
-    <name>error-utils-openapi</name>
+    <name>Error Utils OpenAPI</name>
     <description>Reusable OpenAPI schemas for error-utils payloads</description>
 </project>

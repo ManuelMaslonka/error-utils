@@ -1,15 +1,32 @@
-# error-utils
+# Error Utils
 
 Reusable internal platform library that provides a consistent API error contract for Spring Boot microservices.
 
 ## Modules
 
 - `error-utils-core`: Spring-free error abstractions, models, and exception hierarchy
+- `error-utils-validation`: Spring-free fluent validation pipeline with `failFast` / `collectAll`
 - `error-utils-spring-webmvc`: Spring MVC exception mapping and security JSON handlers
+- `error-utils-openapi`: reusable OpenAPI components for standard error payloads
 - `error-utils-spring-boot-starter`: auto-configuration for zero-boilerplate adoption
-- `error-utils-bom`: version alignment for all modules
+- `error-utils-bom`: dependency version alignment across all error-utils artifacts
 
-## BOM usage
+## Implemented features
+
+- Spring Boot starter with auto-configuration (`ErrorUtilsAutoConfiguration`)
+- Spring MVC exception mapping with consistent JSON payloads (`GlobalApiExceptionHandler`)
+- Security JSON handlers for `401` / `403`
+- Spring-free validation pipeline with `failFast` and `collectAll`
+- Reusable OpenAPI components for shared API contracts
+- BOM module for simplified dependency management
+
+## Build
+
+```bash
+./mvnw clean verify
+```
+
+## Usage (Starter)
 
 ```xml
 <dependencyManagement>
@@ -22,9 +39,9 @@ Reusable internal platform library that provides a consistent API error contract
       <scope>import</scope>
     </dependency>
     <dependency>
-      <groupId>com.maslonka.reservation</groupId>
+        <groupId>io.github.manuelmaslonka</groupId>
       <artifactId>error-utils-bom</artifactId>
-      <version>${error.utils.version}</version>
+        <version>0.1.0</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -33,8 +50,12 @@ Reusable internal platform library that provides a consistent API error contract
 
 <dependencies>
   <dependency>
-    <groupId>com.maslonka.reservation</groupId>
+      <groupId>io.github.manuelmaslonka</groupId>
     <artifactId>error-utils-spring-boot-starter</artifactId>
+  </dependency>
+  <dependency>
+      <groupId>io.github.manuelmaslonka</groupId>
+      <artifactId>error-utils-validation</artifactId>
   </dependency>
 </dependencies>
 ```
@@ -64,6 +85,158 @@ public enum CustomerErrors implements ErrorCode {
 throw new NotFoundException(CustomerErrors.CUSTOMER_NOT_FOUND, "Customer " + id + " not found");
 ```
 
+## Validation usage
+
+Validation module is Spring-free and can be used in services, domain logic, or Spring components.
+
+Public packages:
+
+- `com.maslonka.reservation.errorutils.validation.api`
+- `com.maslonka.reservation.errorutils.validation.model`
+
+### Fluent pipeline
+
+```java
+Validator.forObject(command)
+    .
+
+failFast()
+    .
+
+step(basicCommandValidator)
+    .
+
+step(userAccessValidationStep)
+    .
+
+step(businessRulesValidator)
+    .
+
+throwIfInvalid();
+```
+
+Supported execution modes:
+
+- `failFast()`: stops collecting after the first validation failure
+- `collectAll()`: gathers all failures and exposes them in a single result/exception
+
+### Step contract
+
+Object-bound validation steps can implement `ValidationStep<T>`:
+
+```java
+
+@Component
+class BasicCommandValidator implements ValidationStep<CreateUserCommand> {
+
+    @Override
+    public void validate(CreateUserCommand command, ValidationCollector collector) {
+        collector.check(command.username() != null && !command.username().isBlank(),
+                        ValidationFailure.of(UserErrorCode.USERNAME_REQUIRED, "Username is required")
+                                .field("username")
+                                .rejectedValue(command.username())
+                                .violationCode("NotBlank"));
+    }
+}
+```
+
+### Step with external arguments
+
+If a validation step should not be tied to the validated object type, use an inline lambda and pass external arguments
+explicitly:
+
+```java
+Validator.forObject(command)
+    .
+
+failFast()
+    .
+
+step(basicCommandValidator)
+    .
+
+step((cmd, collector) ->userAccessValidationStep.
+
+validate(collector, organizationId, hasAccessToSomething, something))
+        .
+
+step(businessRulesValidator)
+    .
+
+throwIfInvalid();
+```
+
+Example external-context validator:
+
+```java
+
+@Component
+class UserAccessValidationStep {
+
+    void validate(ValidationCollector collector, Long organizationId, boolean hasAccessToSomething, String something) {
+        collector.check(hasAccessToSomething,
+                        ValidationFailure.of(UserErrorCode.ORGANIZATION_ACCESS_DENIED,
+                                             "User has no access to organization")
+                                .field("organizationId")
+                                .rejectedValue(organizationId)
+                                .metadata("something", something));
+    }
+}
+```
+
+### Collector-only step
+
+For checks that do not depend on the validated object at all, use `step(collector -> ...)`:
+
+```java
+Validator.forObject(command)
+    .
+
+collectAll()
+    .
+
+step(collector ->collector.
+
+check(featureFlagEnabled, ValidationFailure.of(UserErrorCode.FEATURE_DISABLED, "Feature is disabled")
+            .
+
+field("featureFlag")
+    ))
+            .
+
+throwIfInvalid();
+```
+
+### Result or exception
+
+You can either throw immediately:
+
+```java
+Validator.forObject(command)
+    .
+
+collectAll()
+    .
+
+step(basicCommandValidator)
+    .
+
+throwIfInvalid();
+```
+
+Or inspect the result first:
+
+```java
+ValidationResult result = Validator.forObject(command).collectAll().step(basicCommandValidator).toResult();
+
+if(!result.
+
+isValid()){
+        // result.failures()
+        // result.violations()
+        }
+```
+
 ## Error response
 
 ```json
@@ -86,6 +259,8 @@ throw new NotFoundException(CustomerErrors.CUSTOMER_NOT_FOUND, "Customer " + id 
 ```yaml
 error-utils:
   include-exception-message: false
+  include-correlation-id: false
+  include-trace-id: false
   internal-error-message: Internal server error
   correlation-id-mdc-key: correlationId
   trace-id-mdc-key: traceId
@@ -94,6 +269,9 @@ error-utils:
   correlation-id-header: X-Correlation-Id
   trace-id-header: X-Trace-Id
 ```
+
+`correlationId` and `traceId` are hidden by default. They are added to the response only when `include-correlation-id` /
+`include-trace-id` are enabled and values are actually resolved from request attributes, headers, or MDC.
 
 ## ErrorResponseCustomizer
 
@@ -122,6 +300,14 @@ ErrorResponseCustomizer serviceMetadataCustomizer() {
 ```
 
 Customizers are executed in order and receive the current `ApiError` plus `ErrorResponseContext` (throwable, request, violations, rejectedValue).
+
+## Publish
+
+```bash
+./mvnw -DskipTests deploy
+```
+
+Configure credentials in `~/.m2/settings.xml` under server id `github`.
 
 ## OpenAPI integration
 

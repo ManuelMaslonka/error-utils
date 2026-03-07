@@ -6,6 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ErrorUtilsProperties {
 
     private boolean includeExceptionMessage = false;
+    private boolean includeCorrelationId = false;
+    private boolean includeTraceId = false;
     private String internalErrorMessage = "Internal server error";
     private String correlationIdMdcKey = "correlationId";
     private String traceIdMdcKey = "traceId";
@@ -20,6 +22,22 @@ public class ErrorUtilsProperties {
 
     public void setIncludeExceptionMessage(boolean includeExceptionMessage) {
         this.includeExceptionMessage = includeExceptionMessage;
+    }
+
+    public boolean isIncludeCorrelationId() {
+        return includeCorrelationId;
+    }
+
+    public void setIncludeCorrelationId(boolean includeCorrelationId) {
+        this.includeCorrelationId = includeCorrelationId;
+    }
+
+    public boolean isIncludeTraceId() {
+        return includeTraceId;
+    }
+
+    public void setIncludeTraceId(boolean includeTraceId) {
+        this.includeTraceId = includeTraceId;
     }
 
     public String getInternalErrorMessage() {

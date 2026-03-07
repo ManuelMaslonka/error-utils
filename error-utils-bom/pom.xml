@@ -5,34 +5,40 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.maslonka.reservation</groupId>
+        <groupId>io.github.manuelmaslonka</groupId>
         <artifactId>error-utils-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>error-utils-bom</artifactId>
-    <name>error-utils-bom</name>
+    <name>Error Utils BOM</name>
+    <description>Bill of materials for error-utils modules</description>
     <packaging>pom</packaging>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.maslonka.reservation</groupId>
+                <groupId>io.github.manuelmaslonka</groupId>
                 <artifactId>error-utils-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.maslonka.reservation</groupId>
+                <groupId>io.github.manuelmaslonka</groupId>
+                <artifactId>error-utils-validation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.manuelmaslonka</groupId>
                 <artifactId>error-utils-spring-webmvc</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.maslonka.reservation</groupId>
+                <groupId>io.github.manuelmaslonka</groupId>
                 <artifactId>error-utils-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.maslonka.reservation</groupId>
+                <groupId>io.github.manuelmaslonka</groupId>
                 <artifactId>error-utils-openapi</artifactId>
                 <version>${project.version}</version>
             </dependency>

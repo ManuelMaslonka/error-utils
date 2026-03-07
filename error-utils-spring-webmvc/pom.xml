@@ -5,18 +5,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.maslonka.reservation</groupId>
+        <groupId>io.github.manuelmaslonka</groupId>
         <artifactId>error-utils-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>error-utils-spring-webmvc</artifactId>
-    <name>error-utils-spring-webmvc</name>
+    <name>Error Utils Spring WebMVC</name>
     <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
-            <groupId>com.maslonka.reservation</groupId>
+            <groupId>io.github.manuelmaslonka</groupId>
             <artifactId>error-utils-core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -47,6 +47,16 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
