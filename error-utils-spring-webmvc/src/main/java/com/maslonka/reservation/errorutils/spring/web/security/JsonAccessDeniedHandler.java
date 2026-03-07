@@ -15,16 +15,35 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * {@link AccessDeniedHandler} that serializes access denied responses as JSON {@link ApiError}
+ * payloads.
+ */
 public class JsonAccessDeniedHandler implements AccessDeniedHandler {
 
     private final ApiErrorFactory apiErrorFactory;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Creates a new handler.
+     *
+     * @param apiErrorFactory factory used to build response payloads
+     * @param objectMapper    mapper used to serialize the payload
+     */
     public JsonAccessDeniedHandler(ApiErrorFactory apiErrorFactory, ObjectMapper objectMapper) {
         this.apiErrorFactory = apiErrorFactory;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Writes a standardized JSON response for an authorization failure.
+     *
+     * @param request               current HTTP request
+     * @param response              current HTTP response
+     * @param accessDeniedException thrown authorization exception
+     * @throws IOException      when the response cannot be written
+     * @throws ServletException when servlet processing fails
+     */
     @Override
     public void handle(
         HttpServletRequest request,

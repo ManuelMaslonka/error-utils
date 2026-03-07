@@ -3,8 +3,23 @@ package com.maslonka.reservation.errorutils.core.api;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Assembles normalized error input into the public {@link ApiError} payload.
+ */
 public class ApiErrorAssembler {
 
+    /**
+     * Creates a stateless assembler instance.
+     */
+    public ApiErrorAssembler() {
+    }
+
+    /**
+     * Builds an immutable {@link ApiError} from the provided normalized input.
+     *
+     * @param input normalized error payload input
+     * @return assembled API error payload
+     */
     public ApiError assemble(ApiErrorInput input) {
         ErrorCode errorCode = input.errorCode();
         List<FieldViolation> violations = input.violations() == null ?

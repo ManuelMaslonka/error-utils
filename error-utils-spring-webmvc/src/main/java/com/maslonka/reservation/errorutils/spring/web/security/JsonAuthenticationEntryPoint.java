@@ -15,16 +15,35 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * {@link AuthenticationEntryPoint} that serializes authentication failures as JSON
+ * {@link ApiError} payloads.
+ */
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     private final ApiErrorFactory apiErrorFactory;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Creates a new entry point.
+     *
+     * @param apiErrorFactory factory used to build response payloads
+     * @param objectMapper    mapper used to serialize the payload
+     */
     public JsonAuthenticationEntryPoint(ApiErrorFactory apiErrorFactory, ObjectMapper objectMapper) {
         this.apiErrorFactory = apiErrorFactory;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Writes a standardized JSON response for an authentication failure.
+     *
+     * @param request       current HTTP request
+     * @param response      current HTTP response
+     * @param authException thrown authentication exception
+     * @throws IOException      when the response cannot be written
+     * @throws ServletException when servlet processing fails
+     */
     @Override
     public void commence(
         HttpServletRequest request,

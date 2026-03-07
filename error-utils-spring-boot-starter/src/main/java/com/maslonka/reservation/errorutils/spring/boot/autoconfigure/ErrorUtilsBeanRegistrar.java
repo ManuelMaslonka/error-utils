@@ -20,6 +20,12 @@ import org.springframework.util.ClassUtils;
 
 import java.time.Clock;
 
+/**
+ * Registers the default beans required by the error-utils starter.
+ *
+ * <p>Each bean is contributed only when no bean of the same type already exists, which lets
+ * applications override the default implementation selectively.</p>
+ */
 public class ErrorUtilsBeanRegistrar implements ImportBeanDefinitionRegistrar {
 
     private static final String AUTH_ENTRY_POINT = "org.springframework.security.web.AuthenticationEntryPoint";
@@ -29,6 +35,19 @@ public class ErrorUtilsBeanRegistrar implements ImportBeanDefinitionRegistrar {
     private static final String OPENAPI_CUSTOMIZER = "org.springdoc.core.customizers.OpenApiCustomizer";
     private static final String OPENAPI_MODEL = "io.swagger.v3.oas.models.OpenAPI";
 
+    /**
+     * Creates the bean registrar.
+     */
+    public ErrorUtilsBeanRegistrar() {
+    }
+
+    /**
+     * Registers default error-utils beans and optional integrations based on the available
+     * classpath.
+     *
+     * @param importingClassMetadata metadata of the importing configuration
+     * @param registry               registry that receives bean definitions
+     */
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         registerClock(registry);

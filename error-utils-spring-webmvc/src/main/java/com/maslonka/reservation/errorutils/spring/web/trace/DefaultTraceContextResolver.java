@@ -4,14 +4,29 @@ import com.maslonka.reservation.errorutils.spring.web.ErrorUtilsProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 
+/**
+ * Default {@link TraceContextResolver} that looks up identifiers from request attributes, headers,
+ * and finally MDC.
+ */
 public class DefaultTraceContextResolver implements TraceContextResolver {
 
     private final ErrorUtilsProperties properties;
 
+    /**
+     * Creates a new resolver using the configured lookup keys.
+     *
+     * @param properties runtime properties controlling attribute, header, and MDC names
+     */
     public DefaultTraceContextResolver(ErrorUtilsProperties properties) {
         this.properties = properties;
     }
 
+    /**
+     * Resolves correlation and trace identifiers for the current request.
+     *
+     * @param request current HTTP request, may be {@code null}
+     * @return resolved trace context
+     */
     @Override
     public TraceContext resolve(HttpServletRequest request) {
         String correlationId =

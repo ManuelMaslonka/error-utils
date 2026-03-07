@@ -20,6 +20,33 @@ Reusable internal platform library that provides a consistent API error contract
 - Reusable OpenAPI components for shared API contracts
 - BOM module for simplified dependency management
 
+## Default runtime behavior
+
+After adding `error-utils-spring-boot-starter`, the library auto-registers these default beans in Servlet applications:
+
+- `Clock` as `errorUtilsClock` using `Clock.systemUTC()`
+- `ApiErrorAssembler`
+- `ErrorMetadataSanitizer` as `NoopErrorMetadataSanitizer`
+- `TraceContextResolver` as `DefaultTraceContextResolver`
+- `ApiErrorFactory`
+- `GlobalApiExceptionHandler`
+
+Additional beans are registered only when the matching libraries are present:
+
+- `GlobalSecurityExceptionHandler` when Spring Security core is on the classpath
+- `JsonAuthenticationEntryPoint` and `JsonAccessDeniedHandler` when Spring Security web is on the classpath
+- `ErrorUtilsOpenApiCustomizer` when `springdoc-openapi` is on the classpath
+
+Default request-to-response behavior:
+
+- `MethodArgumentNotValidException` and `ConstraintViolationException` become `400 REQUEST_VALIDATION_FAILED`
+- `HttpMessageNotReadableException` becomes `400 MALFORMED_REQUEST_BODY`
+- `BusinessException` uses its own domain `ErrorCode`, metadata, and violations
+- `InternalException` and unknown exceptions are rendered as technical errors
+- raw exception messages for technical failures are hidden by default
+- `correlationId` and `traceId` are hidden by default
+- trace identifiers are resolved in this order: request attribute, header, MDC
+
 ## Build
 
 ```bash
@@ -125,17 +152,18 @@ Supported execution modes:
 Object-bound validation steps can implement `ValidationStep<T>`:
 
 ```java
-
 @Component
 class BasicCommandValidator implements ValidationStep<CreateUserCommand> {
 
     @Override
     public void validate(CreateUserCommand command, ValidationCollector collector) {
-        collector.check(command.username() != null && !command.username().isBlank(),
-                        ValidationFailure.of(UserErrorCode.USERNAME_REQUIRED, "Username is required")
-                                .field("username")
-                                .rejectedValue(command.username())
-                                .violationCode("NotBlank"));
+        collector.check(
+            command.username() != null && !command.username().isBlank(),
+            ValidationFailure.of(UserErrorCode.USERNAME_REQUIRED, "Username is required")
+                .field("username")
+                .rejectedValue(command.username())
+                .violationCode("NotBlank")
+        );
     }
 }
 ```
@@ -169,17 +197,22 @@ throwIfInvalid();
 Example external-context validator:
 
 ```java
-
 @Component
 class UserAccessValidationStep {
 
-    void validate(ValidationCollector collector, Long organizationId, boolean hasAccessToSomething, String something) {
-        collector.check(hasAccessToSomething,
-                        ValidationFailure.of(UserErrorCode.ORGANIZATION_ACCESS_DENIED,
-                                             "User has no access to organization")
-                                .field("organizationId")
-                                .rejectedValue(organizationId)
-                                .metadata("something", something));
+    void validate(
+        ValidationCollector collector,
+        Long organizationId,
+        boolean hasAccessToSomething,
+        String something
+    ) {
+        collector.check(
+            hasAccessToSomething,
+            ValidationFailure.of(UserErrorCode.ORGANIZATION_ACCESS_DENIED, "User has no access to organization")
+                .field("organizationId")
+                .rejectedValue(organizationId)
+                .metadata("something", something)
+        );
     }
 }
 ```
@@ -254,7 +287,7 @@ isValid()){
 }
 ```
 
-## Properties
+## Configuration defaults and options
 
 ```yaml
 error-utils:
@@ -272,6 +305,63 @@ error-utils:
 
 `correlationId` and `traceId` are hidden by default. They are added to the response only when `include-correlation-id` /
 `include-trace-id` are enabled and values are actually resolved from request attributes, headers, or MDC.
+
+| Property                                       | Default                 | Meaning                                                      |
+|------------------------------------------------|-------------------------|--------------------------------------------------------------|
+| `error-utils.include-exception-message`        | `false`                 | Exposes raw exception messages for technical errors.         |
+| `error-utils.include-correlation-id`           | `false`                 | Includes `correlationId` in the JSON response when resolved. |
+| `error-utils.include-trace-id`                 | `false`                 | Includes `traceId` in the JSON response when resolved.       |
+| `error-utils.internal-error-message`           | `Internal server error` | Fallback message used for technical failures.                |
+| `error-utils.correlation-id-mdc-key`           | `correlationId`         | MDC key used as the last fallback for correlation id.        |
+| `error-utils.trace-id-mdc-key`                 | `traceId`               | MDC key used as the last fallback for trace id.              |
+| `error-utils.correlation-id-request-attribute` | `correlationId`         | Request attribute checked first for correlation id.          |
+| `error-utils.trace-id-request-attribute`       | `traceId`               | Request attribute checked first for trace id.                |
+| `error-utils.correlation-id-header`            | `X-Correlation-Id`      | Request header checked second for correlation id.            |
+| `error-utils.trace-id-header`                  | `X-Trace-Id`            | Request header checked second for trace id.                  |
+
+## Customization options
+
+The starter registers default beans only when a bean of the same type is not already present, so you can override
+behavior with your own Spring beans.
+
+You can customize:
+
+- `TraceContextResolver` to change where `correlationId` and `traceId` are read from
+- `ErrorMetadataSanitizer` to remove secrets or normalize metadata before serialization
+- `ErrorResponseCustomizer` to enrich or replace the final `ApiError`
+- `ApiErrorFactory` to control payload assembly end-to-end
+- `GlobalApiExceptionHandler` to change exception-to-response mapping
+- Spring Security entry point / access denied handler for custom security response behavior
+
+Example custom `TraceContextResolver`:
+
+```java
+@Bean
+TraceContextResolver traceContextResolver() {
+    return request -> new TraceContext(
+        request.getHeader("X-Request-Id"),
+        request.getHeader("traceparent")
+    );
+}
+```
+
+Example custom `ErrorMetadataSanitizer`:
+
+```java
+@Bean
+ErrorMetadataSanitizer errorMetadataSanitizer() {
+    return metadata -> {
+        if (metadata == null || metadata.isEmpty()) {
+            return java.util.Map.of();
+        }
+
+        java.util.Map<String, Object> sanitized = new java.util.LinkedHashMap<>(metadata);
+        sanitized.remove("stackTrace");
+        sanitized.remove("sql");
+        return java.util.Map.copyOf(sanitized);
+    };
+}
+```
 
 ## ErrorResponseCustomizer
 
@@ -300,6 +390,18 @@ ErrorResponseCustomizer serviceMetadataCustomizer() {
 ```
 
 Customizers are executed in order and receive the current `ApiError` plus `ErrorResponseContext` (throwable, request, violations, rejectedValue).
+
+Common uses for `ErrorResponseCustomizer`:
+
+- attach service or tenant metadata
+- redact `rejectedValue` for sensitive fields
+- translate messages using your own `messageKey` catalog
+- include request method or other request-scoped values
+
+## Domain model docs
+
+Detailed documentation for the main domain objects is
+in [docs/error-utils-domain-model.md](/Users/manuelmaslonka/Developer/PersonalDeveloper/error-utils/docs/error-utils-domain-model.md).
 
 ## Publish
 

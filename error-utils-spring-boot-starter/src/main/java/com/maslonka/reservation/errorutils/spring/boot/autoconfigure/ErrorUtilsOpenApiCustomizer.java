@@ -16,6 +16,12 @@ import org.springdoc.core.customizers.OpenApiCustomizer;
 
 import java.util.Map;
 
+/**
+ * Contributes reusable error schemas and standard responses to an OpenAPI model.
+ *
+ * <p>The customizer adds shared {@code ApiError} and {@code FieldViolation} schemas and attaches
+ * common error responses to operations that do not define them explicitly.</p>
+ */
 public class ErrorUtilsOpenApiCustomizer implements OpenApiCustomizer {
 
     private static final String API_ERROR_SCHEMA = "ApiError";
@@ -29,6 +35,17 @@ public class ErrorUtilsOpenApiCustomizer implements OpenApiCustomizer {
     private static final String ERROR_422 = "Error422";
     private static final String ERROR_500 = "Error500";
 
+    /**
+     * Creates the OpenAPI customizer.
+     */
+    public ErrorUtilsOpenApiCustomizer() {
+    }
+
+    /**
+     * Updates the supplied OpenAPI document with shared error schemas and responses.
+     *
+     * @param openApi OpenAPI document to customize
+     */
     @Override
     public void customise(OpenAPI openApi) {
         Components components = openApi.getComponents();
