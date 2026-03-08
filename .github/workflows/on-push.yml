@@ -40,6 +40,12 @@ jobs:
       - name: Run tests
         run: ./mvnw -B test
 
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v4
+        if: always()
+        with:
+          report_paths: '**/target/surefire-reports/*.xml'
+
 
   sonar:
     runs-on: ubuntu-latest
@@ -54,8 +60,10 @@ jobs:
           java-version: 25
           cache: maven
 
-      - name: Sonar analysis
-        run: ./mvnw -B sonar:sonar
+      - name: Build + Sonar analysis
+        run: |
+          ./mvnw -B verify sonar:sonar \
+            -Dsonar.host.url=https://sonarcloud.io
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -74,4 +82,4 @@ jobs:
           cache: maven
 
       - name: OWASP Dependency Check
-        run: ./mvnw org.owasp:dependency-check-maven:check
+        run: ./mvnw -B org.owasp:dependency-check-maven:check
