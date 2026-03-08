@@ -64,7 +64,7 @@
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>ManuelMaslonka_error-utils</sonar.projectKey>
-        <sonar.organization>ManuelMaslonka</sonar.organization>
+        <sonar.organization>manuelmaslonka</sonar.organization>
         <sonar.scanner.version>4.0.0.4121</sonar.scanner.version>
     </properties>
 
