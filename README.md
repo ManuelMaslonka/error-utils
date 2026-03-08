@@ -2,6 +2,7 @@
 
 Reusable internal platform library that provides a consistent API error contract for Spring Boot microservices.
 
+
 ## Modules
 
 - `error-utils-core`: Spring-free error abstractions, models, and exception hierarchy
@@ -454,3 +455,9 @@ paths:
         '500':
           $ref: './openapi/error-utils-components.yaml#/components/responses/Error500'
 ```
+# Licence
+
+Copyright (c) 2026 Manuel Mašlonka
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software...
