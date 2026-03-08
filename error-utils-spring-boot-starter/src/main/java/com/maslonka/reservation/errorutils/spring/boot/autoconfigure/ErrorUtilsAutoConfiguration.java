@@ -29,13 +29,4 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableConfigurationProperties(ErrorUtilsProperties.class)
 @Import(ErrorUtilsBeanRegistrar.class)
-public class ErrorUtilsAutoConfiguration {
-
-    /**
-     * Creates the auto-configuration instance.
-     *
-     * <p>The constructor is explicit only so it appears in generated API documentation.</p>
-     */
-    public ErrorUtilsAutoConfiguration() {
-    }
-}
+public class ErrorUtilsAutoConfiguration {}

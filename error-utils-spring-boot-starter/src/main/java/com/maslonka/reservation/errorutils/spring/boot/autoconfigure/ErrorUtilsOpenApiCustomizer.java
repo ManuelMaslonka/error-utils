@@ -36,12 +36,6 @@ public class ErrorUtilsOpenApiCustomizer implements OpenApiCustomizer {
     private static final String ERROR_500 = "Error500";
 
     /**
-     * Creates the OpenAPI customizer.
-     */
-    public ErrorUtilsOpenApiCustomizer() {
-    }
-
-    /**
      * Updates the supplied OpenAPI document with shared error schemas and responses.
      *
      * @param openApi OpenAPI document to customize
@@ -60,6 +54,7 @@ public class ErrorUtilsOpenApiCustomizer implements OpenApiCustomizer {
     }
 
     private void ensureSchemas(Components components) {
+        @SuppressWarnings("rawtypes")
         Map<String, Schema> schemas = components.getSchemas();
         if (schemas == null) {
             schemas = new java.util.LinkedHashMap<>();

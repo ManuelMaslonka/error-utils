@@ -45,14 +45,13 @@ public class BusinessException extends RuntimeException {
     /**
      * Domain error code driving response semantics.
      */
-    private final ErrorCode errorCode;
+    private final transient ErrorCode errorCode;
     /**
      * Additional structured metadata attached to the failure.
      */
-    private final Map<String, Object> metadata;
+    private final transient Map<String, Object> metadata;
     /** Field-level validation details attached to the failure. */
-    private final List<FieldViolation> violations;
-
+    private final transient List<FieldViolation> violations;
     /**
      * Creates a business exception with the given error code.
      *

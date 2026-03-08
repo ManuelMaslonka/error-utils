@@ -1,19 +1,18 @@
 package com.maslonka.reservation.errorutils.spring.web;
 
 import com.maslonka.reservation.errorutils.core.api.ApiError;
-import com.maslonka.reservation.errorutils.core.api.ApiErrorAssembler;
 import com.maslonka.reservation.errorutils.core.api.ErrorCategory;
 import com.maslonka.reservation.errorutils.core.api.ErrorCode;
+import com.maslonka.reservation.errorutils.core.api.FieldViolation;
 import com.maslonka.reservation.errorutils.core.exception.BusinessException;
 import com.maslonka.reservation.errorutils.core.exception.InternalException;
 import com.maslonka.reservation.errorutils.core.spi.ErrorMetadataSanitizer;
 import com.maslonka.reservation.errorutils.spring.web.advice.GlobalApiExceptionHandler;
-import com.maslonka.reservation.errorutils.spring.web.trace.DefaultTraceContextResolver;
-import com.maslonka.reservation.errorutils.spring.web.trace.TraceContextResolver;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import jakarta.validation.metadata.ConstraintDescriptor;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -23,22 +22,17 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class WebApiErrorFactoryTest {
 
-    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-03-06T10:15:30Z"), ZoneOffset.UTC);
-
     @Test
-    void businessExceptionUsesCoreAssemblerAndCustomizers() {
+    @DisplayName("Should assemble business exception payload when customizers and trace ids are enabled")
+    void shouldAssembleBusinessExceptionPayloadWhenCustomizersAndTraceIdsAreEnabled() {
         ApiErrorFactory factory = createFactory(true, true, true);
         MockHttpServletRequest request = request("/api/customers/42");
 
@@ -58,7 +52,8 @@ class WebApiErrorFactoryTest {
     }
 
     @Test
-    void correlationAndTraceIdsAreHiddenByDefault() {
+    @DisplayName("Should hide correlation and trace ids when properties disable their exposure")
+    void shouldHideCorrelationAndTraceIdsWhenPropertiesDisableTheirExposure() {
         ApiErrorFactory factory = createFactory(true, false, false);
         MockHttpServletRequest request = request("/api/customers/42");
 
@@ -67,12 +62,13 @@ class WebApiErrorFactoryTest {
 
         ApiError apiError = factory.fromBusinessException(exception, request);
 
-        assertEquals(null, apiError.correlationId());
-        assertEquals(null, apiError.traceId());
+        assertNull(apiError.correlationId());
+        assertNull(apiError.traceId());
     }
 
     @Test
-    void internalAndUnhandledUseConfiguredSafeMessage() {
+    @DisplayName("Should use safe fallback message when rendering internal and unhandled exceptions")
+    void shouldUseSafeFallbackMessageWhenRenderingInternalAndUnhandledExceptions() {
         ApiErrorFactory factory = createFactory(false, false, false);
         MockHttpServletRequest request = request("/api/internal");
 
@@ -85,7 +81,8 @@ class WebApiErrorFactoryTest {
     }
 
     @Test
-    void globalHandlerMapsMethodArgumentValidationErrors() throws Exception {
+    @DisplayName("Should map method argument validation errors when GlobalApiExceptionHandler handles binding failures")
+    void shouldMapMethodArgumentValidationErrorsWhenGlobalApiExceptionHandlerHandlesBindingFailures() throws Exception {
         GlobalApiExceptionHandler handler = new GlobalApiExceptionHandler(createFactory(true, false, false));
         MockHttpServletRequest request = request("/api/customers");
 
@@ -106,7 +103,8 @@ class WebApiErrorFactoryTest {
     }
 
     @Test
-    void globalHandlerMapsConstraintViolations() {
+    @DisplayName("Should map constraint violations when GlobalApiExceptionHandler handles bean validation failures")
+    void shouldMapConstraintViolationsWhenGlobalApiExceptionHandlerHandlesBeanValidationFailures() {
         GlobalApiExceptionHandler handler = new GlobalApiExceptionHandler(createFactory(true, false, false));
         MockHttpServletRequest request = request("/api/customers");
 
@@ -125,34 +123,96 @@ class WebApiErrorFactoryTest {
         assertEquals("Deprecated", body.violations().getFirst().code());
     }
 
+    @Test
+    @DisplayName("Should expose throwable and first non-null rejected value when customizers are applied")
+    void shouldExposeThrowableAndFirstNonNullRejectedValueWhenCustomizersAreApplied() {
+        ApiErrorFactory factory = TestWebMvcSupport.createFactory(true,
+                                                                  false,
+                                                                  false,
+                                                                  metadata -> metadata == null ?
+                                                                              Map.of() :
+                                                                              Map.copyOf(metadata),
+                                                                  List.of((apiError, context) -> new ApiError(apiError.timestamp(),
+                                                                                                              apiError.status(),
+                                                                                                              apiError.error(),
+                                                                                                              apiError.code(),
+                                                                                                              apiError.message(),
+                                                                                                              apiError.path(),
+                                                                                                              apiError.correlationId(),
+                                                                                                              apiError.traceId(),
+                                                                                                              apiError.violations(),
+                                                                                                              Map.of("rejectedValue",
+                                                                                                                     context.rejectedValue(),
+                                                                                                                     "throwableType",
+                                                                                                                     context.throwable()
+                                                                                                                             .getClass()
+                                                                                                                             .getSimpleName()))));
+        MockHttpServletRequest request = request("/api/customers");
+        IllegalArgumentException exception = new IllegalArgumentException("invalid");
+
+        ApiError apiError = factory.from(StandardErrorCode.REQUEST_VALIDATION_FAILED,
+                                         "Validation failed",
+                                         request,
+                                         List.of(new FieldViolation("name", null, "must not be blank", "NotBlank"),
+                                                 new FieldViolation("email", "broken@example", "must be valid", "Email")),
+                                         Map.of(),
+                                         exception);
+
+        assertEquals("broken@example", apiError.metadata().get("rejectedValue"));
+        assertEquals("IllegalArgumentException", apiError.metadata().get("throwableType"));
+        assertEquals(2, apiError.violations().size());
+    }
+
+    @Test
+    @DisplayName("Should ignore null customizer results when later customizers still modify the payload")
+    void shouldIgnoreNullCustomizerResultsWhenLaterCustomizersStillModifyThePayload() {
+        ApiErrorFactory factory = TestWebMvcSupport.createFactory(true,
+                                                                  false,
+                                                                  false,
+                                                                  metadata -> metadata == null ?
+                                                                              Map.of() :
+                                                                              Map.copyOf(metadata),
+                                                                  List.of((apiError, context) -> null,
+                                                                          (apiError, context) -> new ApiError(apiError.timestamp(),
+                                                                                                              apiError.status(),
+                                                                                                              apiError.error(),
+                                                                                                              apiError.code(),
+                                                                                                              apiError.message(),
+                                                                                                              apiError.path(),
+                                                                                                              apiError.correlationId(),
+                                                                                                              apiError.traceId(),
+                                                                                                              apiError.violations(),
+                                                                                                              Map.of("requestMethod",
+                                                                                                                     context.request().getMethod()))));
+
+        ApiError apiError = factory.from(StandardErrorCode.MALFORMED_REQUEST_BODY, "Malformed request body", request("/api/customers"), null, Map.of(), null);
+
+        assertEquals("GET", apiError.metadata().get("requestMethod"));
+        assertTrue(apiError.violations().isEmpty());
+    }
+
     private ApiErrorFactory createFactory(boolean includeExceptionMessage, boolean includeCorrelationId, boolean includeTraceId) {
-        ErrorUtilsProperties properties = new ErrorUtilsProperties();
-        properties.setIncludeExceptionMessage(includeExceptionMessage);
-        properties.setIncludeCorrelationId(includeCorrelationId);
-        properties.setIncludeTraceId(includeTraceId);
-        TraceContextResolver traceContextResolver = new DefaultTraceContextResolver(properties);
         ErrorMetadataSanitizer sanitizer = metadata -> metadata == null ?
                                                        Map.of() :
                                                        Map.of("secret", "masked");
 
-        return new ApiErrorFactory(FIXED_CLOCK,
-                                   new ApiErrorAssembler(),
-                                   traceContextResolver,
-                                   sanitizer,
-                                   properties,
-                                   List.of((apiError, context) -> new ApiError(apiError.timestamp(),
-                                                                               apiError.status(),
-                                                                               apiError.error(),
-                                                                               apiError.code(),
-                                                                               apiError.message(),
-                                                                               apiError.path(),
-                                                                               apiError.correlationId(),
-                                                                               apiError.traceId(),
-                                                                               apiError.violations(),
-                                                                               Map.of("secret",
-                                                                                      apiError.metadata().getOrDefault("secret", "missing"),
-                                                                                      "method",
-                                                                                      context.request().getMethod()))));
+        return TestWebMvcSupport.createFactory(includeExceptionMessage,
+                                               includeCorrelationId,
+                                               includeTraceId,
+                                               sanitizer,
+                                               List.of((apiError, context) -> new ApiError(apiError.timestamp(),
+                                                                                           apiError.status(),
+                                                                                           apiError.error(),
+                                                                                           apiError.code(),
+                                                                                           apiError.message(),
+                                                                                           apiError.path(),
+                                                                                           apiError.correlationId(),
+                                                                                           apiError.traceId(),
+                                                                                           apiError.violations(),
+                                                                                           Map.of("secret",
+                                                                                                  apiError.metadata().getOrDefault("secret", "missing"),
+                                                                                                  "method",
+                                                                                                  context.request().getMethod()))));
     }
 
     private MockHttpServletRequest request(String path) {

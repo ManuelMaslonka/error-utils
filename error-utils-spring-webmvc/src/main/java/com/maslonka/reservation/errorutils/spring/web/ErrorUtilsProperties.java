@@ -40,12 +40,6 @@ public class ErrorUtilsProperties {
     private String traceIdHeader = "X-Trace-Id";
 
     /**
-     * Creates a new property holder with the library defaults.
-     */
-    public ErrorUtilsProperties() {
-    }
-
-    /**
      * Indicates whether raw exception messages may be exposed for technical failures.
      *
      * @return {@code true} when technical exception messages should be included

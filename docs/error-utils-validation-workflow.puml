@@ -1,0 +1,115 @@
+@startuml
+title error-utils: validation framework workflow
+
+autonumber
+hide footbox
+
+actor Caller
+participant "Validator" as Entry
+participant "ObjectValidator<T>" as ObjValidator
+participant "ValidationCollector" as Collector
+participant "ValidationChain" as Chain
+participant "ValidationStep<T>\nor inline lambda" as Step
+participant "ValidationFailure" as Failure
+participant "ValidationResult" as Result
+participant "BusinessException\n(default)" as BusinessEx
+
+note over Entry, Chain
+Validation module is Spring-free.
+Default start mode = COLLECT_ALL.
+end note
+
+Caller -> Entry: forObject(target)
+Entry -> Chain: start()
+Chain --> Entry: new chain(mode=COLLECT_ALL, failures=[])
+Entry -> ObjValidator: new ObjectValidator(target, chain)
+ObjValidator -> Collector: new ValidationCollector(chain)
+Entry --> Caller: ObjectValidator<T>
+
+alt switch to fail-fast
+    Caller -> ObjValidator: failFast()
+    ObjValidator -> Chain: failFast()
+    Chain --> ObjValidator: new chain view(mode=FAIL_FAST,\nshared failures list)
+    ObjValidator --> Caller: new ObjectValidator(target, chainView)
+else keep/default collect-all
+    Caller -> ObjValidator: collectAll() or keep default
+    ObjValidator -> Chain: collectAll()
+    Chain --> ObjValidator: new chain view(mode=COLLECT_ALL,\nshared failures list)
+    ObjValidator --> Caller: new ObjectValidator(target, chainView)
+end
+
+loop each validation step
+    alt typed reusable step
+        Caller -> ObjValidator: step(ValidationStep)
+        ObjValidator -> Step: validate(target, collector)
+    else collector-only step
+        Caller -> ObjValidator: step(collector -> ...)
+        ObjValidator -> Step: accept(collector)
+    else direct check/require
+        Caller -> ObjValidator: check(...) / require(...)
+        ObjValidator -> Collector: check(...) / require(...)
+    end
+
+    alt step uses collector
+        Step -> Collector: check(...) / require(...)
+    end
+
+    Collector -> Chain: check(valid, failure)\nor check(predicate, failure)
+    Chain -> Chain: shouldSkipEvaluation()?
+
+    alt FAIL_FAST and a previous failure exists
+        Chain --> Collector: skip evaluation
+    else current validation passed
+        Chain --> Collector: no failure added
+    else current validation failed
+        Collector -> Failure: ValidationFailure.of(errorCode, message)\n.field(...)\n.rejectedValue(...)\n.violationCode(...)\n.metadata(...)\n.exceptionFactory(...)
+        Collector -> Chain: add failure
+    end
+end
+
+alt caller asks for result
+    Caller -> ObjValidator: toResult()
+    ObjValidator -> Collector: toResult()
+    Collector -> Chain: toResult()
+    Chain -> Chain: snapshot failures
+    Chain -> Failure: toFieldViolation() for each failure
+    Chain -> Result: new ValidationResult(mode,\nfailures, violations)
+    Result --> Caller: immutable result
+
+    note over Result
+    Result exposes:
+    - isValid()
+    - failures()
+    - violations()
+    - metadata() merged from all failures
+    - firstFailure()
+    end note
+else caller wants exception
+    Caller -> ObjValidator: throwIfInvalid()\nor throwIfInvalid(customFactory)
+    ObjValidator -> Collector: throwIfInvalid(...)
+    Collector -> Chain: throwIfInvalid(...)
+    Chain -> Chain: result = toResult()
+
+    alt result is valid
+        Chain --> Caller: return normally
+    else first failure has exceptionFactory
+        Chain -> Failure: firstFailure.exceptionFactory().apply(firstFailure)
+        Failure --> Chain: RuntimeException
+        Chain --> Caller: throw custom exception
+    else custom terminal factory provided
+        Chain -> Result: customFactory.apply(result)
+        Result --> Chain: RuntimeException
+        Chain --> Caller: throw custom exception
+    else default behavior
+        Chain -> Result: firstFailure(), metadata(), violations()
+        Chain -> BusinessEx: new BusinessException(\nfirstFailure.errorCode(),\nfirstFailure.message(),\nnull,\nresult.metadata(),\nresult.violations())
+        BusinessEx --> Caller: throw BusinessException
+    end
+end
+
+note over Caller
+FAIL_FAST stops recording after first failure.
+COLLECT_ALL keeps all failures in one result/exception.
+end note
+
+@enduml
