@@ -61,6 +61,8 @@
         <spring-framework.version>7.0.3</spring-framework.version>
         <micrometer.version>1.14.2</micrometer.version>
         <springdoc.version>2.6.0</springdoc.version>
+
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>ManuelMaslonka_error-utils</sonar.projectKey>
         <sonar.organization>ManuelMaslonka</sonar.organization>
     </properties>
