@@ -8,6 +8,7 @@ import com.maslonka.reservation.errorutils.validation.model.ValidationFailure;
 import com.maslonka.reservation.errorutils.validation.model.ValidationMode;
 import com.maslonka.reservation.errorutils.validation.model.ValidationResult;
 import com.maslonka.reservation.errorutils.validation.pipeline.ValidationChain;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class ValidationChainTest {
 
     @Test
-    void collectAllKeepsAllFailures() {
+    @DisplayName("Should keep all failures when collect-all mode is used")
+    void shouldKeepAllFailuresWhenCollectAllModeIsUsed() {
         ValidationResult result = ValidationChain.start()
                 .collectAll()
                 .check(false, ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required").field("name").violationCode("NotBlank"))
@@ -31,7 +33,8 @@ class ValidationChainTest {
     }
 
     @Test
-    void failFastStopsAfterFirstFailure() {
+    @DisplayName("Should stop after first failure when fail-fast mode is used")
+    void shouldStopAfterFirstFailureWhenFailFastModeIsUsed() {
         ValidationResult result = ValidationChain.start()
                 .failFast()
                 .check(false, ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required").field("name"))
@@ -45,42 +48,41 @@ class ValidationChainTest {
     }
 
     @Test
-    void throwIfInvalidUsesFailureSpecificExceptionFactoryWhenPresent() {
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-                                                       () -> ValidationChain.start()
-                                                               .check(false,
-                                                                      ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required")
-                                                                              .field("name")
-                                                                              .exceptionFactory(failure -> new IllegalStateException(failure.message())))
-                                                               .throwIfInvalid());
+    @DisplayName("Should use failure-specific exception factory when one is attached to the first failure")
+    void shouldUseFailureSpecificExceptionFactoryWhenOneIsAttachedToTheFirstFailure() {
+        ValidationChain chain = ValidationChain.start()
+                .check(false,
+                       ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required")
+                               .field("name")
+                               .exceptionFactory(failure -> new IllegalStateException(failure.message())));
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, chain::throwIfInvalid);
 
         assertEquals("Name is required", exception.getMessage());
     }
 
     @Test
-    void throwIfInvalidCanUseCustomTerminalExceptionFactory() {
+    @DisplayName("Should use custom terminal exception factory when caller provides one")
+    void shouldUseCustomTerminalExceptionFactoryWhenCallerProvidesOne() {
+        ValidationChain chain = ValidationChain.start()
+                .collectAll()
+                .check(false, ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required").field("name"))
+                .check(false, ValidationFailure.of(TestErrorCode.AGE_INVALID, "Age must be positive").field("age"));
+
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                                                          () -> ValidationChain.start()
-                                                                  .collectAll()
-                                                                  .check(false,
-                                                                         ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required").field("name"))
-                                                                  .check(false,
-                                                                         ValidationFailure.of(TestErrorCode.AGE_INVALID, "Age must be positive").field("age"))
-                                                                  .throwIfInvalid(result -> new IllegalArgumentException(
-                                                                          "violations=" + result.violations().size())));
+                                                          () -> chain.throwIfInvalid(result -> new IllegalArgumentException(
+                                                                  "violations=" + result.violations().size())));
 
         assertEquals("violations=2", exception.getMessage());
     }
 
     @Test
-    void defaultThrowMapsToBusinessException() {
-        BusinessException exception = assertThrows(BusinessException.class,
-                                                   () -> ValidationChain.start()
-                                                           .check(false,
-                                                                  ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required")
-                                                                          .field("name")
-                                                                          .metadata("source", "service"))
-                                                           .throwIfInvalid());
+    @DisplayName("Should map to BusinessException when throw-if-invalid uses the default strategy")
+    void shouldMapToBusinessExceptionWhenThrowIfInvalidUsesTheDefaultStrategy() {
+        ValidationChain chain = ValidationChain.start()
+                .check(false, ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required").field("name").metadata("source", "service"));
+
+        BusinessException exception = assertThrows(BusinessException.class, chain::throwIfInvalid);
 
         assertEquals(TestErrorCode.NAME_REQUIRED, exception.errorCode());
         assertEquals(1, exception.violations().size());
@@ -88,7 +90,8 @@ class ValidationChainTest {
     }
 
     @Test
-    void validChainProducesEmptyResult() {
+    @DisplayName("Should produce empty result when all validations pass")
+    void shouldProduceEmptyResultWhenAllValidationsPass() {
         ValidationResult result = ValidationChain.start().check(true, ValidationFailure.of(TestErrorCode.NAME_REQUIRED, "Name is required")).toResult();
 
         assertTrue(result.isValid());
@@ -97,7 +100,8 @@ class ValidationChainTest {
     }
 
     @Test
-    void validatorPipelineChainsValidationSteps() {
+    @DisplayName("Should collect failures from multiple validation steps when validator pipeline runs in collect-all mode")
+    void shouldCollectFailuresFromMultipleValidationStepsWhenValidatorPipelineRunsInCollectAllMode() {
         CreateUserCommand command = new CreateUserCommand("", false, true);
 
         ValidationResult result = Validator.forObject(command)
@@ -118,7 +122,8 @@ class ValidationChainTest {
     }
 
     @Test
-    void validatorPipelineRespectsFailFastAcrossSteps() {
+    @DisplayName("Should respect fail-fast across multiple validation steps when validator pipeline runs")
+    void shouldRespectFailFastAcrossMultipleValidationStepsWhenValidatorPipelineRuns() {
         CreateUserCommand command = new CreateUserCommand("", false, false);
 
         ValidationResult result = Validator.forObject(command)
@@ -135,7 +140,8 @@ class ValidationChainTest {
     }
 
     @Test
-    void validatorPipelineSupportsBiConsumerStepsWithExternalArguments() {
+    @DisplayName("Should support external arguments when validation pipeline uses inline target and collector steps")
+    void shouldSupportExternalArgumentsWhenValidationPipelineUsesInlineTargetAndCollectorSteps() {
         CreateUserCommand command = new CreateUserCommand("john", true, true);
         long organizationId = 42L;
         boolean externalAccess = false;
@@ -154,7 +160,8 @@ class ValidationChainTest {
     }
 
     @Test
-    void validatorPipelineSupportsCollectorOnlySteps() {
+    @DisplayName("Should support collector-only steps when validation does not depend on the validated object")
+    void shouldSupportCollectorOnlyStepsWhenValidationDoesNotDependOnTheValidatedObject() {
         ValidationResult result = Validator.forObject(new CreateUserCommand("john", true, true))
                 .collectAll()
                 .step(collector -> collector.check(false, ValidationFailure.of(TestErrorCode.AGE_INVALID, "Global validation failed").field("global")))

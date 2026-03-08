@@ -1,5 +1,5 @@
 @startuml
-title error-utils: exception workflow after refactor
+title error-utils: exception workflow (current core + spring-webmvc split)
 
 autonumber
 hide footbox
@@ -8,17 +8,18 @@ actor Client
 participant "Controller / Service" as App
 participant "GlobalApiExceptionHandler" as Handler
 participant "ApiErrorFactory\n(Spring facade)" as PublicFactory
-participant "WebApiErrorFactory\n(web adapter)" as WebFactory
+participant "WebApiErrorFactory" as WebFactory
 participant "TraceContextResolver" as TraceResolver
 participant "ErrorMetadataSanitizer" as Sanitizer
-participant "ApiErrorRenderer\n(core)" as Renderer
 participant "ApiErrorAssembler\n(core)" as Assembler
 participant "ErrorResponseCustomizer*" as Customizers
 
 note over PublicFactory, Assembler
 Current split:
-- spring-webmvc: request adaptation + trace/config + customizers
-- core: payload rendering + final assembly
+- spring-webmvc: exception mapping, request adaptation,
+  trace resolution, sanitizer, customizers
+- core: ApiError model, ApiErrorInput, ApiErrorAssembler,
+  BusinessException / InternalException / ErrorCode
 end note
 
 Client -> App: HTTP request
@@ -43,7 +44,7 @@ else Unhandled exception
     WebFactory -> WebFactory: StandardErrorCode.TECHNICAL_ERROR\nsafeTechnicalMessage(...)\nviolations=[]\nmetadata={}
 end
 
-group Web adapter responsibilities
+group Web factory responsibilities
     WebFactory -> WebFactory: normalize violations
 
     WebFactory -> TraceResolver: resolve(request)
@@ -57,20 +58,18 @@ group Web adapter responsibilities
 
     WebFactory -> Sanitizer: sanitize(metadata)
     Sanitizer --> WebFactory: sanitized metadata
+
+    WebFactory -> WebFactory: create ApiErrorInput(\nInstant.now(clock), errorCode,\nmessage, request URI,\noptional correlationId,\noptional traceId,\nviolations, metadata)
+    note right of WebFactory
+    ids are included only when enabled
+    in ErrorUtilsProperties
+    end note
 end
 
-group Core rendering responsibilities
-    WebFactory -> Renderer: render(errorCode, message, path,\noptional correlationId,\noptional traceId,\nviolations, metadata)
-    note right of WebFactory
-    path = request.getRequestURI()
-    ids included only when enabled in ErrorUtilsProperties
-    end note
-
-    Renderer -> Renderer: Instant.now(clock)\nnormalize collections/maps
-    Renderer -> Assembler: assemble(ApiErrorInput)
+group Core assembly
+    WebFactory -> Assembler: assemble(ApiErrorInput)
     Assembler -> Assembler: resolve HTTP status name
-    Assembler --> Renderer: ApiError
-    Renderer --> WebFactory: ApiError
+    Assembler --> WebFactory: ApiError
 end
 
 group Web post-processing

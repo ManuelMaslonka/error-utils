@@ -10,6 +10,7 @@ import com.maslonka.reservation.errorutils.spring.web.security.JsonAccessDeniedH
 import com.maslonka.reservation.errorutils.spring.web.security.JsonAuthenticationEntryPoint;
 import com.maslonka.reservation.errorutils.spring.web.trace.DefaultTraceContextResolver;
 import com.maslonka.reservation.errorutils.spring.web.trace.TraceContextResolver;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -36,12 +37,6 @@ public class ErrorUtilsBeanRegistrar implements ImportBeanDefinitionRegistrar {
     private static final String OPENAPI_MODEL = "io.swagger.v3.oas.models.OpenAPI";
 
     /**
-     * Creates the bean registrar.
-     */
-    public ErrorUtilsBeanRegistrar() {
-    }
-
-    /**
      * Registers default error-utils beans and optional integrations based on the available
      * classpath.
      *
@@ -49,6 +44,7 @@ public class ErrorUtilsBeanRegistrar implements ImportBeanDefinitionRegistrar {
      * @param registry               registry that receives bean definitions
      */
     @Override
+    @NullMarked
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
         registerClock(registry);
         registerIfMissing(registry, "apiErrorAssembler", ApiErrorAssembler.class, bean(ApiErrorAssembler.class));

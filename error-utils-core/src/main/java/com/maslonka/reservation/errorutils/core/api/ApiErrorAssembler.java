@@ -9,12 +9,6 @@ import java.util.Map;
 public class ApiErrorAssembler {
 
     /**
-     * Creates a stateless assembler instance.
-     */
-    public ApiErrorAssembler() {
-    }
-
-    /**
      * Builds an immutable {@link ApiError} from the provided normalized input.
      *
      * @param input normalized error payload input

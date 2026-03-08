@@ -10,12 +10,6 @@ import java.util.Map;
 public class NoopErrorMetadataSanitizer implements ErrorMetadataSanitizer {
 
     /**
-     * Creates the default no-op sanitizer.
-     */
-    public NoopErrorMetadataSanitizer() {
-    }
-
-    /**
      * Returns an immutable copy of the supplied metadata.
      *
      * @param metadata metadata to sanitize

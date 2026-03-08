@@ -37,7 +37,7 @@ public final class ValidationFailure {
     private final Object rejectedValue;
     private final String violationCode;
     private final Map<String, Object> metadata;
-    private final Function<ValidationFailure, ? extends RuntimeException> exceptionFactory;
+    private final Function<ValidationFailure, RuntimeException> exceptionFactory;
 
     private ValidationFailure(ErrorCode errorCode,
                               String message,
@@ -45,7 +45,7 @@ public final class ValidationFailure {
                               Object rejectedValue,
                               String violationCode,
                               Map<String, Object> metadata,
-                              Function<ValidationFailure, ? extends RuntimeException> exceptionFactory) {
+                              Function<ValidationFailure, RuntimeException> exceptionFactory) {
         this.errorCode = Objects.requireNonNull(errorCode, "errorCode");
         this.message = message;
         this.field = field;
@@ -127,7 +127,7 @@ public final class ValidationFailure {
      *
      * @return custom exception factory or {@code null}
      */
-    public Function<ValidationFailure, ? extends RuntimeException> exceptionFactory() {
+    public Function<ValidationFailure, RuntimeException> exceptionFactory() {
         return exceptionFactory;
     }
 
@@ -190,7 +190,7 @@ public final class ValidationFailure {
      * @param exceptionFactory factory used by validation when throwing on failure
      * @return updated immutable failure
      */
-    public ValidationFailure exceptionFactory(Function<ValidationFailure, ? extends RuntimeException> exceptionFactory) {
+    public ValidationFailure exceptionFactory(Function<ValidationFailure, RuntimeException> exceptionFactory) {
         return new ValidationFailure(errorCode, message, field, rejectedValue, violationCode, metadata, exceptionFactory);
     }
 

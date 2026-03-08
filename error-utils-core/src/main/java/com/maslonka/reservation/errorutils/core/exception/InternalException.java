@@ -10,7 +10,7 @@ public class InternalException extends RuntimeException {
     /**
      * Domain error code driving response semantics.
      */
-    private final ErrorCode errorCode;
+    private final transient ErrorCode errorCode;
 
     /**
      * Creates an internal exception with the provided error code.

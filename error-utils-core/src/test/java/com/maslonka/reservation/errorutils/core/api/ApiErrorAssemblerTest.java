@@ -1,5 +1,6 @@
 package com.maslonka.reservation.errorutils.core.api;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -13,7 +14,8 @@ class ApiErrorAssemblerTest {
     private final ApiErrorAssembler assembler = new ApiErrorAssembler();
 
     @Test
-    void assemblesApiErrorWithoutSpringDependencies() {
+    @DisplayName("Should assemble public ApiError fields when normalized input is provided")
+    void shouldAssembleApiErrorWhenNormalizedInputIsProvided() {
         Instant timestamp = Instant.parse("2026-03-06T10:15:30Z");
         ApiErrorInput input = new ApiErrorInput(timestamp,
                                                 TestErrorCode.CUSTOMER_NOT_FOUND,
