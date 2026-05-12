@@ -2,6 +2,7 @@ package com.maslonka.reservation.errorutils.validation.model;
 
 import com.maslonka.reservation.errorutils.core.api.ErrorCode;
 import com.maslonka.reservation.errorutils.core.api.FieldViolation;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
 import java.util.Objects;
@@ -32,20 +33,20 @@ import java.util.function.Function;
 public final class ValidationFailure {
 
     private final ErrorCode errorCode;
-    private final String message;
-    private final String field;
-    private final Object rejectedValue;
-    private final String violationCode;
+    private final @Nullable String message;
+    private final @Nullable String field;
+    private final @Nullable Object rejectedValue;
+    private final @Nullable String violationCode;
     private final Map<String, Object> metadata;
-    private final Function<ValidationFailure, RuntimeException> exceptionFactory;
+    private final @Nullable Function<ValidationFailure, RuntimeException> exceptionFactory;
 
     private ValidationFailure(ErrorCode errorCode,
-                              String message,
-                              String field,
-                              Object rejectedValue,
-                              String violationCode,
-                              Map<String, Object> metadata,
-                              Function<ValidationFailure, RuntimeException> exceptionFactory) {
+                              @Nullable String message,
+                              @Nullable String field,
+                              @Nullable Object rejectedValue,
+                              @Nullable String violationCode,
+                              @Nullable Map<String, Object> metadata,
+                              @Nullable Function<ValidationFailure, RuntimeException> exceptionFactory) {
         this.errorCode = Objects.requireNonNull(errorCode, "errorCode");
         this.message = message;
         this.field = field;
@@ -64,7 +65,7 @@ public final class ValidationFailure {
      * @param message   user-facing validation message
      * @return immutable failure instance
      */
-    public static ValidationFailure of(ErrorCode errorCode, String message) {
+    public static ValidationFailure of(ErrorCode errorCode, @Nullable String message) {
         return new ValidationFailure(errorCode, message, null, null, null, Map.of(), null);
     }
 
@@ -80,9 +81,9 @@ public final class ValidationFailure {
     /**
      * Returns the user-facing validation message.
      *
-     * @return validation message
+     * @return validation message, or {@code null}
      */
-    public String message() {
+    public @Nullable String message() {
         return message;
     }
 
@@ -91,7 +92,7 @@ public final class ValidationFailure {
      *
      * @return field path or {@code null} when the failure is not field-specific
      */
-    public String field() {
+    public @Nullable String field() {
         return field;
     }
 
@@ -100,7 +101,7 @@ public final class ValidationFailure {
      *
      * @return rejected value or {@code null}
      */
-    public Object rejectedValue() {
+    public @Nullable Object rejectedValue() {
         return rejectedValue;
     }
 
@@ -109,7 +110,7 @@ public final class ValidationFailure {
      *
      * @return validation rule code or {@code null}
      */
-    public String violationCode() {
+    public @Nullable String violationCode() {
         return violationCode;
     }
 
@@ -127,7 +128,7 @@ public final class ValidationFailure {
      *
      * @return custom exception factory or {@code null}
      */
-    public Function<ValidationFailure, RuntimeException> exceptionFactory() {
+    public @Nullable Function<ValidationFailure, RuntimeException> exceptionFactory() {
         return exceptionFactory;
     }
 
@@ -137,7 +138,7 @@ public final class ValidationFailure {
      * @param field logical field path
      * @return updated immutable failure
      */
-    public ValidationFailure field(String field) {
+    public ValidationFailure field(@Nullable String field) {
         return new ValidationFailure(errorCode, message, field, rejectedValue, violationCode, metadata, exceptionFactory);
     }
 
@@ -147,7 +148,7 @@ public final class ValidationFailure {
      * @param rejectedValue offending value
      * @return updated immutable failure
      */
-    public ValidationFailure rejectedValue(Object rejectedValue) {
+    public ValidationFailure rejectedValue(@Nullable Object rejectedValue) {
         return new ValidationFailure(errorCode, message, field, rejectedValue, violationCode, metadata, exceptionFactory);
     }
 
@@ -157,7 +158,7 @@ public final class ValidationFailure {
      * @param violationCode validation rule identifier
      * @return updated immutable failure
      */
-    public ValidationFailure violationCode(String violationCode) {
+    public ValidationFailure violationCode(@Nullable String violationCode) {
         return new ValidationFailure(errorCode, message, field, rejectedValue, violationCode, metadata, exceptionFactory);
     }
 
@@ -180,7 +181,7 @@ public final class ValidationFailure {
      * @param metadata metadata to associate with the failure
      * @return updated immutable failure
      */
-    public ValidationFailure metadata(Map<String, Object> metadata) {
+    public ValidationFailure metadata(@Nullable Map<String, Object> metadata) {
         return new ValidationFailure(errorCode, message, field, rejectedValue, violationCode, metadata, exceptionFactory);
     }
 
@@ -190,7 +191,7 @@ public final class ValidationFailure {
      * @param exceptionFactory factory used by validation when throwing on failure
      * @return updated immutable failure
      */
-    public ValidationFailure exceptionFactory(Function<ValidationFailure, RuntimeException> exceptionFactory) {
+    public ValidationFailure exceptionFactory(@Nullable Function<ValidationFailure, RuntimeException> exceptionFactory) {
         return new ValidationFailure(errorCode, message, field, rejectedValue, violationCode, metadata, exceptionFactory);
     }
 

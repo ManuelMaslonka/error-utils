@@ -5,4 +5,7 @@
  * {@link com.maslonka.reservation.errorutils.core.exception.BusinessException} or an
  * infrastructure/framework exception bubbles up from Spring MVC.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.spring.web.advice;
+
+import org.jspecify.annotations.NullMarked;

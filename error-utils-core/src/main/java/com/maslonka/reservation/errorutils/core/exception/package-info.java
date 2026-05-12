@@ -13,4 +13,7 @@
  * {@link com.maslonka.reservation.errorutils.core.exception.InternalException} for controlled
  * internal errors.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.core.exception;
+
+import org.jspecify.annotations.NullMarked;

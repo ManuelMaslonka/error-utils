@@ -1,6 +1,7 @@
 package com.maslonka.reservation.errorutils.core.exception;
 
 import com.maslonka.reservation.errorutils.core.api.ErrorCode;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Runtime exception representing a controlled internal failure.
@@ -28,7 +29,7 @@ public class InternalException extends RuntimeException {
      * @param errorCode domain error code
      * @param cause     root cause
      */
-    public InternalException(ErrorCode errorCode, Throwable cause) {
+    public InternalException(ErrorCode errorCode, @Nullable Throwable cause) {
         super(cause);
         this.errorCode = errorCode;
     }

@@ -15,6 +15,7 @@ import com.maslonka.reservation.errorutils.spring.web.advice.ErrorResponseContex
 import com.maslonka.reservation.errorutils.spring.web.trace.TraceContext;
 import com.maslonka.reservation.errorutils.spring.web.trace.TraceContextResolver;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -129,7 +130,7 @@ public class WebApiErrorFactory {
      * @param metadata metadata to sanitize and serialize
      * @return assembled error payload
      */
-    public ApiError from(ErrorCode errorCode, String detail, HttpServletRequest request, List<FieldViolation> violations, Map<String, Object> metadata) {
+    public ApiError from(ErrorCode errorCode, @Nullable String detail, HttpServletRequest request, @Nullable List<FieldViolation> violations, @Nullable Map<String, Object> metadata) {
         return from(errorCode, detail, request, violations, metadata, null);
     }
 
@@ -141,15 +142,15 @@ public class WebApiErrorFactory {
      * @param request current HTTP request
      * @param violations field violations to include
      * @param metadata metadata to sanitize and serialize
-     * @param throwable original exception associated with the response
+     * @param throwable original exception associated with the response, or {@code null}
      * @return assembled error payload after all customizers have been applied
      */
     public ApiError from(ErrorCode errorCode,
-                         String detail,
+                         @Nullable String detail,
                          HttpServletRequest request,
-                         List<FieldViolation> violations,
-                         Map<String, Object> metadata,
-                         Throwable throwable) {
+                         @Nullable List<FieldViolation> violations,
+                         @Nullable Map<String, Object> metadata,
+                         @Nullable Throwable throwable) {
         List<FieldViolation> normalizedViolations = violations == null ?
                                                     List.of() :
                                                     List.copyOf(violations);
@@ -157,9 +158,7 @@ public class WebApiErrorFactory {
 
         ApiError apiError = apiErrorAssembler.assemble(new ApiErrorInput(Instant.now(clock),
                                                                          errorCode,
-                                                                         detail,
-                                                                         request == null ?
-                                                                         null :
+                                                                         detail != null ? detail : properties.getInternalErrorMessage(),
                                                                          request.getRequestURI(),
                                                                          properties.isIncludeCorrelationId() ?
                                                                          traceContext.correlationId() :
@@ -190,15 +189,12 @@ public class WebApiErrorFactory {
     private ApiError applyCustomizers(ApiError apiError, ErrorResponseContext context) {
         ApiError current = apiError;
         for (ErrorResponseCustomizer customizer : errorResponseCustomizers) {
-            ApiError customized = customizer.customize(current, context);
-            if (customized != null) {
-                current = customized;
-            }
+            current = customizer.customize(current, context);
         }
         return current;
     }
 
-    private String safeTechnicalMessage(String detail) {
+    private String safeTechnicalMessage(@Nullable String detail) {
         if (properties.isIncludeExceptionMessage() && detail != null && !detail.isBlank()) {
             return detail;
         }

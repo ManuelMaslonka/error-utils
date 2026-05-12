@@ -1,6 +1,7 @@
 package com.maslonka.reservation.errorutils.core.exception;
 
 import com.maslonka.reservation.errorutils.core.api.ErrorCode;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Business exception representing a missing resource.
@@ -13,7 +14,7 @@ public class NotFoundException extends BusinessException {
      * @param errorCode domain error code
      * @param detail    detail message
      */
-    public NotFoundException(ErrorCode errorCode, String detail) {
+    public NotFoundException(ErrorCode errorCode, @Nullable String detail) {
         super(errorCode, detail);
     }
 }

@@ -5,4 +5,7 @@
  * They can be logged, inspected, merged into a business exception, or converted into API-facing
  * {@link com.maslonka.reservation.errorutils.core.api.FieldViolation} entries.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.validation.model;
+
+import org.jspecify.annotations.NullMarked;
