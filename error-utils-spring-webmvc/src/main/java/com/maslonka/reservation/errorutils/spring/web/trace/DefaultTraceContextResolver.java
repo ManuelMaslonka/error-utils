@@ -2,6 +2,7 @@ package com.maslonka.reservation.errorutils.spring.web.trace;
 
 import com.maslonka.reservation.errorutils.spring.web.ErrorUtilsProperties;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.MDC;
 
 /**
@@ -28,7 +29,7 @@ public class DefaultTraceContextResolver implements TraceContextResolver {
      * @return resolved trace context
      */
     @Override
-    public TraceContext resolve(HttpServletRequest request) {
+    public TraceContext resolve(@Nullable HttpServletRequest request) {
         String correlationId =
                 resolveValue(request, properties.getCorrelationIdRequestAttribute(), properties.getCorrelationIdHeader(), properties.getCorrelationIdMdcKey());
 
@@ -37,7 +38,7 @@ public class DefaultTraceContextResolver implements TraceContextResolver {
         return new TraceContext(correlationId, traceId);
     }
 
-    private String resolveValue(HttpServletRequest request, String attributeName, String headerName, String mdcKey) {
+    private @Nullable String resolveValue(@Nullable HttpServletRequest request, String attributeName, String headerName, String mdcKey) {
         if (request != null) {
             Object attribute = request.getAttribute(attributeName);
             if (attribute instanceof String value && !value.isBlank()) {

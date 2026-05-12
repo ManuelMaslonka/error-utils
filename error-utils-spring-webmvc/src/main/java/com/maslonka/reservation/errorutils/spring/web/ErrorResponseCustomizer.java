@@ -23,9 +23,12 @@ public interface ErrorResponseCustomizer {
     /**
      * Returns a customized error payload for the current request context.
      *
+     * <p>The returned payload replaces the current one for subsequent customizers and for
+     * the final response. Must not return {@code null}.</p>
+     *
      * @param apiError current error payload
      * @param context  request-specific context used for customization
-     * @return replacement payload, or {@code null} to keep the current payload unchanged
+     * @return replacement payload, never {@code null}
      */
     ApiError customize(ApiError apiError, ErrorResponseContext context);
 }

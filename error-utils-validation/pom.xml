@@ -16,6 +16,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.github.manuelmaslonka</groupId>
             <artifactId>error-utils-core</artifactId>
             <version>${project.version}</version>

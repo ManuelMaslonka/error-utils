@@ -5,4 +5,7 @@
  * auto-configuration composes the MVC integration, optional security adapters, and optional OpenAPI
  * customization into a ready-to-use runtime setup.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.spring.boot.autoconfigure;
+
+import org.jspecify.annotations.NullMarked;

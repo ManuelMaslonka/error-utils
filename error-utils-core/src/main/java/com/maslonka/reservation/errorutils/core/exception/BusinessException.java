@@ -2,6 +2,7 @@ package com.maslonka.reservation.errorutils.core.exception;
 
 import com.maslonka.reservation.errorutils.core.api.ErrorCode;
 import com.maslonka.reservation.errorutils.core.api.FieldViolation;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,7 @@ public class BusinessException extends RuntimeException {
      * @param errorCode domain error code
      * @param detail detail message
      */
-    public BusinessException(ErrorCode errorCode, String detail) {
+    public BusinessException(ErrorCode errorCode, @Nullable String detail) {
         this(errorCode, detail, null, Map.of(), List.of());
     }
 
@@ -78,7 +79,7 @@ public class BusinessException extends RuntimeException {
      * @param detail detail message
      * @param cause root cause
      */
-    public BusinessException(ErrorCode errorCode, String detail, Throwable cause) {
+    public BusinessException(ErrorCode errorCode, @Nullable String detail, @Nullable Throwable cause) {
         this(errorCode, detail, cause, Map.of(), List.of());
     }
 
@@ -93,10 +94,10 @@ public class BusinessException extends RuntimeException {
      */
     public BusinessException(
         ErrorCode errorCode,
-        String detail,
-        Throwable cause,
-        Map<String, Object> metadata,
-        List<FieldViolation> violations
+        @Nullable String detail,
+        @Nullable Throwable cause,
+        @Nullable Map<String, Object> metadata,
+        @Nullable List<FieldViolation> violations
     ) {
         super(detail, cause);
         this.errorCode = errorCode;

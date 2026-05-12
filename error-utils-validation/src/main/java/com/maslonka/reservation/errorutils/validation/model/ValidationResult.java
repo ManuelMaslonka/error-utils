@@ -1,6 +1,7 @@
 package com.maslonka.reservation.errorutils.validation.model;
 
 import com.maslonka.reservation.errorutils.core.api.FieldViolation;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,7 @@ public record ValidationResult(ValidationMode mode, List<ValidationFailure> fail
      *
      * @return first failure or {@code null} when the result is valid
      */
-    public ValidationFailure firstFailure() {
+    public @Nullable ValidationFailure firstFailure() {
         return failures.isEmpty() ?
                null :
                failures.getFirst();

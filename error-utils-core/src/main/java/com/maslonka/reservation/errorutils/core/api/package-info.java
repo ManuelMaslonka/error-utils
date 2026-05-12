@@ -17,4 +17,7 @@
  *     <li>{@link com.maslonka.reservation.errorutils.core.api.FieldViolation} is reused by both validation and web layers</li>
  * </ul>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.core.api;
+
+import org.jspecify.annotations.NullMarked;

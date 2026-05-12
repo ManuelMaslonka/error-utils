@@ -6,4 +6,7 @@
  * information when explicitly enabled through
  * {@link com.maslonka.reservation.errorutils.spring.web.ErrorUtilsProperties}.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.spring.web.trace;
+
+import org.jspecify.annotations.NullMarked;

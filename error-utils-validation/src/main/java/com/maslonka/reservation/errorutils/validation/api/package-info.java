@@ -13,4 +13,7 @@
  * <p>The actual execution state lives in the {@code pipeline} package, while result objects live in
  * the {@code model} package.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.validation.api;
+
+import org.jspecify.annotations.NullMarked;

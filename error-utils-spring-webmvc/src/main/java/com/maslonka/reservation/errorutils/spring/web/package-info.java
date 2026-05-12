@@ -13,4 +13,7 @@
  * <p>These types work together with subpackages such as {@code advice}, {@code factory},
  * {@code security}, and {@code trace}.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.spring.web;
+
+import org.jspecify.annotations.NullMarked;

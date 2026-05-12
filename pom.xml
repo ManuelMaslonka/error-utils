@@ -60,6 +60,7 @@
         <spring-framework.version>7.0.6</spring-framework.version>
         <micrometer.version>1.16.2</micrometer.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <jspecify.version>1.0.0</jspecify.version>
 
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>ManuelMaslonka_error-utils</sonar.projectKey>
@@ -114,6 +115,11 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-common</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jspecify</groupId>
+                <artifactId>jspecify</artifactId>
+                <version>${jspecify.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

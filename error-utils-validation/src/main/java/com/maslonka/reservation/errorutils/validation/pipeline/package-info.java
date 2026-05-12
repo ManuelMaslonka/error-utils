@@ -6,4 +6,7 @@
  * with {@code ObjectValidator}, while {@code ValidationChain} manages failure collection and
  * exception creation.</p>
  */
+@NullMarked
 package com.maslonka.reservation.errorutils.validation.pipeline;
+
+import org.jspecify.annotations.NullMarked;
